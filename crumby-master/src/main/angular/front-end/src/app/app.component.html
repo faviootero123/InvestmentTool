@@ -1,0 +1,313 @@
+<div class="container" style="width: 100%">
+  <div style="display: inline-grid; width: 100%" class="pb-2">
+    <div style="display: inline; justify-self: start">
+      <h2>Portfolio Details</h2>
+      <h5>Amount to invest: {{ amount }}</h5>
+    </div>
+    <div style="display: inline; justify-self: end">
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-toggle="modal"
+        data-target="#createPortfolioModal"
+      >
+        Create Portfolio
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-toggle="modal"
+        data-target="#addStockModal"
+        [disabled]="!isPortfolioSet"
+      >
+        Add Stock
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-toggle="modal"
+        data-target="#newUserModal"
+        [disabled]="!isPortfolioSet"
+      >
+        Empty List
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-toggle="modal"
+        data-target="#saveDistributionsModal"
+        [disabled]="!isPortfolioSet"
+      >
+        Save Distributions
+      </button>
+    </div>
+  </div>
+  <div *ngIf="distributionSaved; else elseBlock">
+    <div *ngFor="let graph of graphdata">
+    <app-google-line-chart *ngIf="graphdata != null" [data]="graph" [data2]="amountData" [data3]="currentData" [columnNames]="columns"></app-google-line-chart>
+    </div>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th style=>Symbol</th>
+          <th style=>Company Name</th>
+          <th style=>Currency</th>
+          <th style=>Price</th>
+          <th style=>Daily Change $</th>
+          <th style=>Daily Change %</th>
+          <th>Number of Shares</th>
+          <th style=>View</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let stonk of stonks">
+          <td>{{ stonk.stockName }}</td>
+          <td>{{ stonk.name }}</td>
+          <td>{{ stonk.currency }}</td>
+          <td>{{ stonk.price }}</td>
+          <td>{{ stonk.change }}</td>
+          <td>{{ (((stonk.price+stonk.change)-stonk.price)/(stonk.price+stonk.change))*100 | number : '1.2-2' }}</td>
+          <td>
+            {{stonk.amount}}
+          </td>
+          <td>
+            <button
+              (click)="getUser()"
+              type="button"
+              class="btn btn-success"
+            >
+              View History
+            </button>
+          </td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+<ng-template #elseBlock>
+  <form id="slidersForm">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th style=>Symbol</th>
+          <th style=>Company Name</th>
+          <th style=>Currency</th>
+          <th style=>Price</th>
+          <th style=>Daily Change $</th>
+          <th style=>Daily Change %</th>
+          <th>Starting Money %</th>
+          <th style=>Remove</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let stonk of stonks">
+          <td>{{ stonk.stockName }}</td>
+          <td>{{ stonk.name }}</td>
+          <td>{{ stonk.currency }}</td>
+          <td>{{ stonk.price }}</td>
+          <td>{{ stonk.change }}</td>
+          <td>{{ (((stonk.price+stonk.change)-stonk.price)/(stonk.price+stonk.change))*100 | number : '1.2-2' }}</td>
+          <td>
+            <div style="max-width: 200px; display: inline">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value="0"
+                class="slider"
+                [id]="'slider' + stonk.stockName"
+                [name]="'slider' + stonk.stockName"
+                (input)="updateSliders()"
+              />
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value="0"
+                class="input m-2"
+                [id]="'display' + stonk.stockName"
+                [name]="'display' + stonk.stockName"
+                style="width: 20%"
+                (input)="updateBox()"
+              />
+            </div>
+          </td>
+          <td>
+            <button
+              (click)="removeStonk(stonk.stockName)"
+              type="button"
+              class="btn btn-success"
+            >
+              Remove
+            </button>
+          </td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </form>
+</ng-template>
+</div>
+
+<!-- The create stock modal -->
+<div class="modal fade" id="createPortfolioModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Start Portfolio</h4>
+        <button type="button" class="close" data-dismiss="modal">
+          &times;
+        </button>
+      </div>
+      <div class="modal-body">
+        <form class="form-check">
+          <div class="form-group">
+            <p>
+              Are you sure you want to start a new portfolio?<br />You will lose
+              any unsubmitted data!!!
+            </p>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Enter a starting amount"
+              [formControl]="startingAmount"
+              name="startingAmount"
+              required="required"
+            /><br />
+            <button
+              type="button"
+              (click)="createPortolio()"
+              class="btn btn-primary"
+              data-dismiss="modal"
+            >
+              Confirm
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- The add stock modal -->
+<div class="container">
+  <div class="modal fade" id="addStockModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title">Add Stock</h4>
+          <button type="button" class="close" data-dismiss="modal">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form class="form-check">
+            <div class="form-group">
+              <p>Enter stock symbol to add to the watchlist</p>
+              <input
+                type="text"
+                class="form-control"
+                [formControl]="stockName"
+                placeholder="Enter Stock Name"
+                name="stockName"
+                required="required"
+              /><br />
+              <button
+                type="button"
+                (click)="getStonk()"
+                class="btn btn-primary"
+                data-dismiss="modal"
+              >
+                Search
+              </button>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" data-dismiss="modal">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- The empty list modal -->
+<div class="modal fade" id="newUserModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Empty the watchlist</h4>
+        <button type="button" class="close" data-dismiss="modal">
+          &times;
+        </button>
+      </div>
+      <div class="modal-body">
+        <form class="form-check">
+          <div class="form-group">
+            <p>
+              Are you sure? Your list will get wiped out!
+            </p>
+            <button
+              type="button"
+              (click)="emptyList()"
+              class="btn btn-primary"
+              data-dismiss="modal"
+            >
+              Confirm
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- The save distributions modal -->
+<div class="container">
+  <div class="modal fade" id="saveDistributionsModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title">Save Distributions</h4>
+          <button type="button" class="close" data-dismiss="modal">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Saving will disable editing of stock choices and starting
+            distributions, and will start the tracking of selected portfolio.
+          </p>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="saveDistributions()"
+            data-dismiss="modal"
+          >
+            Save
+          </button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" data-dismiss="modal">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

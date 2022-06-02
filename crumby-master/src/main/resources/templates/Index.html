@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <title>Home</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script
+      type="text/javascript"
+      src="https://www.gstatic.com/charts/loader.js"
+    ></script>
+  </head>
+
+  <body>
+    <div class="container" style="width: 100%">
+      <div style="display: inline-grid; width: 100%" class="pb-2">
+        <div style="display: inline; justify-self: start">
+          <h2>Portfolio Details</h2>
+          <!-- <p>Starting Amount:		<span th:text="${startingAmount}"></span></p>
+				<p>Left after distributions:	<span th:text="${startingAmount}"></span></p> -->
+        </div>
+        <div style="display: inline; justify-self: end">
+          <button
+            type="button"
+            class="btn btn-primary"
+            data-toggle="modal"
+            data-target="#addStockModal"
+          >
+            Add stock
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            data-toggle="modal"
+            data-target="#newUserModal"
+          >
+            Empty list
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            data-toggle="modal"
+            data-target="#saveDistributionsModal"
+          >
+            Save distributions
+          </button>
+        </div>
+      </div>
+      <form id="slidersForm" action="/saveDistributions" method="POST">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th style="min-width: 50px">Symbol</th>
+              <th style="min-width: 250px">Company Name</th>
+              <th style="min-width: 50px">Currency</th>
+              <th style="min-width: 50px">Price</th>
+              <th style="min-width: 175px">Daily Change (USD)</th>
+              <th>Starting Money %</th>
+              <th style="min-width: 50px">Remove</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="stockDto : ${stockList}">
+              <td th:text="${stockDto.stockName}"></td>
+              <td th:text="${stockDto.name}"></td>
+              <td th:text="${stockDto.currency}"></td>
+              <td th:text="${stockDto.price}"></td>
+              <td th:text="${stockDto.change}"></td>
+              <td>
+                <div style="max-width: 200px; display: inline">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value="0"
+                    class="slider"
+                    th:id="'slider' + ${stockDto.stockName}"
+                    th:name="'slider' + ${stockDto.stockName}"
+                    oninput="updateSliders()"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value="0"
+                    class="input"
+                    th:id="'display' + ${stockDto.stockName}"
+                    th:name="'display' + ${stockDto.stockName}"
+                    style="width: 20%"
+                    oninput="updateBox()"
+                  />
+                </div>
+              </td>
+              <td>
+                <a
+                  th:href="@{/removeStock/}+${stockDto.stockName}"
+                  type="button"
+                  class="btn btn-success"
+                  >Remove</a
+                >
+              </td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </form>
+    </div>
+
+    <!-- The graph container -->
+    <div class="container" style="width: 100%; display: grid">
+      <div align="center" style="width: 100%">
+        <div id="linechart1" style="height: 500px"></div>
+        <div align="center" style="width: 100%; display: inline-flex">
+          <div id="piechart1" style="width: 75%; height: 300px"></div>
+          <div id="piechart2" style="width: 75%; height: 300px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- The add stock modal -->
+    <div class="container">
+      <div class="modal fade" id="addStockModal">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Add Stock</h4>
+              <button type="button" class="close" data-dismiss="modal">
+                &times;
+              </button>
+            </div>
+            <div class="modal-body">
+              <form class="form-check" action="/getStock">
+                <div class="form-group">
+                  <p>Enter stock symbol to add to the watchlist</p>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Enter Stock Name"
+                    name="stockName"
+                    required="required"
+                  /><br />
+                  <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" data-dismiss="modal">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- The empty list modal -->
+    <div class="modal fade" id="newUserModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Empty the watchlist</h4>
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+          </div>
+          <div class="modal-body">
+            <form class="form-check" action="/createNewPortfolio">
+              <div class="form-group">
+                <p>
+                  Are you sure you want to start a new portfolio?<br />You will
+                  lose any unsubmitted data!!!
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Enter a new starting amount"
+                  name="startingAmount"
+                  required="required"
+                /><br />
+                <button type="submit" class="btn btn-primary">Confirm</button>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- The save distributions modal -->
+    <div class="container">
+      <div class="modal fade" id="saveDistrbutionsModal">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Save distributions</h4>
+              <button type="button" class="close" data-dismiss="modal">
+                &times;
+              </button>
+            </div>
+            <div class="modal-body">
+              <p>
+                Saving will disable editing of stock choices and starting
+                distributions, and will start the tracking of selected portfolio.
+              </p>
+
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="disablePortfolioEditing()"
+              >
+                Save
+              </button>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" data-dismiss="modal">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- The js for sliders/numberboxs -->
+    <script>
+      function updateSliders() {
+        var startingAmountPercentLeft = 100;
+        var elems = document.getElementsByClassName("slider");
+        var elemsValues = document.getElementsByClassName("input");
+        for (var i = 0, len = elems.length; i < len; i++) {
+          while (elems[i].value > startingAmountPercentLeft) {
+            elems[i].value--;
+          }
+          elemsValues[i].value = elems[i].value;
+          startingAmountPercentLeft -= elems[i].value;
+        }
+      }
+      function updateBox() {
+        var startingAmountPercentLeft = 100;
+        var elems = document.getElementsByClassName("slider");
+        var elemsValues = document.getElementsByClassName("input");
+        for (var i = 0, len = elems.length; i < len; i++) {
+          while (elemsValues[i].value > startingAmountPercentLeft) {
+            elemsValues[i].value--;
+          }
+          elems[i].value = elemsValues[i].value;
+          startingAmountPercentLeft -= elems[i].value;
+        }
+      }
+
+      //this was intended to disable editing the stock list after submiting distributions
+      //doesnt work right now lmao
+      function disablePortfolioEditing() {
+        let sliders = document.getElementsByClassName("slider");
+        let input = document.getElementsByClassName("input");
+        let buttons = document.getElementsByClassName("btn");
+        let form = document.getElementById("slidersForm");
+        //for (let element of sliders) {
+        //  element.setAttribute("disabled", true);
+        //}
+        //for (let element of input) {
+        //  element.setAttribute("disabled", true);
+        //}
+        //for (let element of buttons) {
+        //  element.setAttribute("disabled", true);
+        //}
+        let formData = new FormData(form);
+
+        formData.forEach((v, k) => {
+          console.log(`key ${k}, value ${v}`);
+        });
+        let request = new XMLHttpRequest();
+        request.open("POST", "/saveDistibutions");
+        request.send(formData);
+        //form.submit();
+      }
+    </script>
+
+    <!-- The js for graphs -->
+    <script th:inline="javascript">
+      var historical_data = /*[[${historicChartData}]]*/ "noValue";
+      var starting_data = /*[[${startingChartData}]]*/ "noValue";
+      var current_data = /*[[${currentChartData}]]*/ "noValue";
+      $(document).ready(function () {
+        google.charts.load("current", {
+          packages: ["corechart", "bar"],
+        });
+        google.charts.setOnLoadCallback(drawPieChart);
+        google.charts.setOnLoadCallback(drawLineChart);
+      });
+
+      function drawLineChart() {
+        var data = new google.visualization.DataTable();
+        data.addColumn("string", "Date");
+        data.addColumn("number", "Value");
+        if (historical_data == null) return;
+        Object.keys(historical_data).forEach(function (key) {
+          data.addRow([key, historical_data[key]]);
+        });
+        var options = {
+          title: "Portfolio Value over time",
+        };
+        var chart = new google.visualization.LineChart(
+          document.getElementById("linechart1")
+        );
+        chart.draw(data, options);
+      }
+
+      function drawPieChart() {
+        var data = new google.visualization.DataTable();
+        data.addColumn("string", "Name");
+        data.addColumn("number", "Percentage");
+        if (starting_data == null) return;
+        Object.keys(starting_data).forEach(function (key) {
+          data.addRow([key, starting_data[key]]);
+        });
+        var options = {
+          title: "Stock % of Starting Funds",
+        };
+        var chart = new google.visualization.PieChart(
+          document.getElementById("piechart1")
+        );
+        chart.draw(data, options);
+
+        var data2 = new google.visualization.DataTable();
+        data2.addColumn("string", "Name");
+        data2.addColumn("number", "Percentage");
+        if (current_data == null) return;
+        Object.keys(current_data).forEach(function (key) {
+          data2.addRow([key, current_data[key]]);
+        });
+        var options2 = {
+          title: "Stock % of Current Funds",
+        };
+        var chart2 = new google.visualization.PieChart(
+          document.getElementById("piechart2")
+        );
+        chart2.draw(data2, options2);
+      }
+    </script>
+  </body>
+</html>
